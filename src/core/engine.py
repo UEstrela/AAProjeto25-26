@@ -1,59 +1,58 @@
 import time
 from typing import List
-from src.core.interfaces import Agent, Environment
+from src.core.interfaces import Agente, Ambiente
+from src.core.definitions import ModoOperacao
 
-class SimulationEngine:
-    """
-    Motor que sincroniza a execução dos agentes e do ambiente.
-    """
-    def __init__(self, environment: Environment):
-        self.environment = environment
-        self.agents: List[Agent] = []
-        self.running = False
+class MotorDeSimulacao:
+    """[cite: 132]"""
+    
+    def __init__(self, ambiente: Ambiente):
+        self.agentes: List[Agente] = [] # [cite: 129]
+        self.ambiente: Ambiente = ambiente # [cite: 130]
+        self.passoAtual: int = 0 # [cite: 131]
+        self.aExecutar: bool = False
 
-    def add_agent(self, agent: Agent):
-        self.agents.append(agent)
+    def adicionaAgente(self, agente: Agente):
+        self.agentes.append(agente)
 
-    def run(self, max_steps: int = 1000, delay: float = 0.1):
-        """
-        Ciclo principal de simulação (executa).
-        """
-        print(f"--- A iniciar simulação com {len(self.agents)} agentes ---")
-        self.running = True
-        step = 0
+    def listaAgentes(self) -> List[Agente]:
+        """[cite: 134]"""
+        return self.agentes
 
-        while self.running and step < max_steps:
-            # 1. Atualizar dinâmica do ambiente (ex: recursos a crescer)
-            self.environment.update()
+    def executa(self, max_passos: int = 1000):
+        """[cite: 135] - Implementa o ciclo do diagrama de sequência"""
+        print(f"--- A iniciar Simulação (Motor) ---")
+        self.aExecutar = True
+        self.passoAtual = 0
 
-            # 2. Ciclo de decisão dos agentes
-            actions_to_perform = {}
-            
-            # Fase de Perceção e Decisão
-            for agent in self.agents:
-                # O ambiente gera a observação para este agente
-                obs = self.environment.get_observation(agent)
-                # O agente processa a observação
-                agent.observe(obs)
-                # O agente escolhe a ação
-                action = agent.act()
-                actions_to_perform[agent] = action
+        while self.aExecutar and self.passoAtual < max_passos:
+            # 1. Atualizar Ambiente [cite: 196]
+            self.ambiente.atualizacao()
 
-            # 3. Fase de Execução (Atuação)
-            for agent, action in actions_to_perform.items():
-                # O ambiente executa e devolve recompensa
-                reward = self.environment.perform_action(agent, action)
+            accoes_do_passo = {}
+
+            # 2. Perceção e Deliberação [cite: 197]
+            for agente in self.agentes:
+                # Solicitar Estado Local / Devolver Percepção [cite: 206, 207]
+                obs = self.ambiente.observacaoPara(agente)
+                agente.observacao(obs)
                 
-                # O agente aprende com o resultado
-                agent.update_state(reward)
+                # Deliberar / Selecionar Ação [cite: 209]
+                accao = agente.age()
+                accoes_do_passo[agente] = accao
+
+            # 3. Execução da Ação [cite: 199]
+            for agente, accao in accoes_do_passo.items():
+                # Tentar Executar / Devolver Resultado [cite: 210, 211]
+                recompensa = self.ambiente.agir(accao, agente)
                 
-                # Logging simples
-                # print(f"Passo {step}: {agent.name} fez {action.name} -> R={reward}")
+                # Agente avalia (Momento de Aprendizagem)
+                agente.avaliacaoEstadoAtual(recompensa)
 
-            # 4. Visualização
-            self.environment.display()
-            
-            step += 1
-            time.sleep(delay) # Controlo de velocidade para visualização
+            # 4. Registar Estado / Métricas [cite: 200]
+            # self.registarResultados()
 
-        print("--- Simulação terminada ---")
+            self.passoAtual += 1
+            # time.sleep(0.1) # Opcional para visualização
+
+        print("--- Terminar Simulação [cite: 202] ---")
