@@ -31,23 +31,22 @@ class LearningAgent(Agent):
     def act(self) -> Action:
         """Epsilon-Greedy strategy [cite: 217]"""
 
-        # Initialize state in Q-table if not present
+        # Lazy initialization: if state s not in q_table, init with 0.0 for all actions
         if self.current_state not in self.q_table:
             self.q_table[self.current_state] = {"MoveNorth": 0.0, "MoveSouth": 0.0, "MoveEast": 0.0, "MoveWest": 0.0}
 
-        # Action selection
+        # Action selection: exploration if random < epsilon, else exploitation
         temp_epsilon = self.epsilon if self.mode == OperationMode.LEARNING else 0.0
         if random.random() < temp_epsilon:
-            # Exploration (Random) [cite: 217]
-            action_name = random.choice(list(self.q_table[self.current_state].keys()))
+            # Exploration (purely random among 4 possible actions)
+            action_name = random.choice(["MoveNorth", "MoveSouth", "MoveEast", "MoveWest"])
         else:
-            # Exploitation (Best Q) [cite: 217]
-            qs = self.q_table[self.current_state]
-            action_name = max(qs, key=qs.get)
+            # Exploitation (choose action with max Q for current state)
+            action_name = max(self.q_table[self.current_state], key=self.q_table[self.current_state].get)
 
         action = Action(action_name)
 
-        # Save context for update step (s, a)
+        # Save context (s, a) for later Q-update
         self.previous_state = self.current_state
         self.previous_action = action_name
 
@@ -55,8 +54,8 @@ class LearningAgent(Agent):
 
     def evaluate_current_state(self, extrinsic_reward: float):
         """
-        Update Q-table according to Bellman Equation [cite: 216]
-        Includes Intrinsic Reward (Novelty/Time) [cite: 218-234]
+        Q-Learning algorithm update according to Bellman Equation.
+        Q(s,a) <- Q(s,a) + alpha * [R + gamma * max(Q(s',a')) - Q(s,a)]
         """
         if self.mode != OperationMode.LEARNING:
             return
@@ -64,26 +63,23 @@ class LearningAgent(Agent):
         if self.previous_state is None or self.previous_action is None:
             return
 
-        # 1. Compute Total Reward
-        # Constant temporal penalty [cite: 231]
+        # Calculate total reward (extrinsic + intrinsic penalty)
         time_penalty = -0.1
-        # (Future: Compute novelty here for [cite: 234])
         total_reward = extrinsic_reward + time_penalty
 
-        # 2. Get Max Q for next state (s')
+        # Ensure s' (current_state) is initialized in Q-table if not visited
         if self.current_state not in self.q_table:
             self.q_table[self.current_state] = {"MoveNorth": 0.0, "MoveSouth": 0.0, "MoveEast": 0.0, "MoveWest": 0.0}
 
+        # Get max over all possible actions for s'
         max_q_next = max(self.q_table[self.current_state].values())
 
-        # 3. Update Q(s,a) - Bellman Formula [cite: 216]
+        # Q-Learning update
         current_q = self.q_table[self.previous_state][self.previous_action]
+        td_error = total_reward + self.gamma * max_q_next - current_q
+        self.q_table[self.previous_state][self.previous_action] += self.alpha * td_error
 
-        new_q = current_q + self.alpha * (total_reward + (self.gamma * max_q_next) - current_q)
-
-        self.q_table[self.previous_state][self.previous_action] = new_q
-
-        # Epsilon decay (optional, but recommended)
+        # Decay epsilon
         if self.epsilon > 0.01:
             self.epsilon *= 0.995
 

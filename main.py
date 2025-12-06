@@ -23,7 +23,7 @@ def main():
         env.agent_positions[agent] = (0, 0)
 
         # Run engine until agent reaches goal or max steps
-        engine.run(max_steps=100)
+        engine.run(max_steps=150)
 
         # Check if reached (for stats)
         final_pos = env.agent_positions[agent]
