@@ -1,25 +1,25 @@
 from enum import Enum
 from typing import Any
 
-class ModoOperacao(Enum):
-    """Definido no diagrama UML [cite: 126]"""
-    APRENDIZAGEM = 1
-    TESTE = 2
+class OperationMode(Enum):
+    """Definição do modo de operação [cite: 126]"""
+    LEARNING = 1
+    TEST = 2
 
-class Accao:
+class Action:
     """Estrutura de Ação [cite: 155]"""
-    def __init__(self, nome: str, parametros: Any = None):
-        self.nome = nome
-        self.parametros = parametros
+    def __init__(self, name: str, parameters: Any = None):
+        self.name = name
+        self.parameters = parameters
 
     def __repr__(self):
-        return f"Accao({self.nome})"
+        return f"Action({self.name})"
 
-class Observacao:
+class Observation:
     """Estrutura de Observação [cite: 157]"""
-    def __init__(self, dados: Any):
-        self.dados = dados
-        self.timestamp = 0 # [cite: 158]
+    def __init__(self, data: Any):
+        self.data = data
+        self.timestamp = 0  # [cite: 158]
 
     def __repr__(self):
-        return f"Observacao({self.dados})"
+        return f"Observation({self.data})"

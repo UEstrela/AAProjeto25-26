@@ -1,6 +1,6 @@
 import time
 from src.core.engine import MotorDeSimulacao
-from src.environments.lighthouse.py import AmbienteFarol
+from src.environment.lighthouse import AmbienteFarol
 from src.agents.learning_agent import AgenteAprendizagem
 from src.core.definitions import ModoOperacao
 

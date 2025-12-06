@@ -1,58 +1,58 @@
 import time
 from typing import List
-from src.core.interfaces import Agente, Ambiente
-from src.core.definitions import ModoOperacao
+from src.core.interfaces import Agent, Environment
+from src.core.definitions import OperationMode
 
-class MotorDeSimulacao:
+class SimulationEngine:
     """[cite: 132]"""
-    
-    def __init__(self, ambiente: Ambiente):
-        self.agentes: List[Agente] = [] # [cite: 129]
-        self.ambiente: Ambiente = ambiente # [cite: 130]
-        self.passoAtual: int = 0 # [cite: 131]
-        self.aExecutar: bool = False
 
-    def adicionaAgente(self, agente: Agente):
-        self.agentes.append(agente)
+    def __init__(self, environment: Environment):
+        self.agents: List[Agent] = []  # [cite: 129]
+        self.environment: Environment = environment  # [cite: 130]
+        self.current_step: int = 0  # [cite: 131]
+        self.is_running: bool = False
 
-    def listaAgentes(self) -> List[Agente]:
+    def add_agent(self, agent: Agent):
+        self.agents.append(agent)
+
+    def list_agents(self) -> List[Agent]:
         """[cite: 134]"""
-        return self.agentes
+        return self.agents
 
-    def executa(self, max_passos: int = 1000):
+    def run(self, max_steps: int = 1000):
         """[cite: 135] - Implementa o ciclo do diagrama de sequência"""
-        print(f"--- A iniciar Simulação (Motor) ---")
-        self.aExecutar = True
-        self.passoAtual = 0
+        print("--- A iniciar Simulação (Engine) ---")
+        self.is_running = True
+        self.current_step = 0
 
-        while self.aExecutar and self.passoAtual < max_passos:
+        while self.is_running and self.current_step < max_steps:
             # 1. Atualizar Ambiente [cite: 196]
-            self.ambiente.atualizacao()
+            self.environment.update()
 
-            accoes_do_passo = {}
+            actions_this_step = {}
 
             # 2. Perceção e Deliberação [cite: 197]
-            for agente in self.agentes:
+            for agent in self.agents:
                 # Solicitar Estado Local / Devolver Percepção [cite: 206, 207]
-                obs = self.ambiente.observacaoPara(agente)
-                agente.observacao(obs)
-                
+                obs = self.environment.observe_for(agent)
+                agent.observe(obs)
+
                 # Deliberar / Selecionar Ação [cite: 209]
-                accao = agente.age()
-                accoes_do_passo[agente] = accao
+                action = agent.act()
+                actions_this_step[agent] = action
 
             # 3. Execução da Ação [cite: 199]
-            for agente, accao in accoes_do_passo.items():
+            for agent, action in actions_this_step.items():
                 # Tentar Executar / Devolver Resultado [cite: 210, 211]
-                recompensa = self.ambiente.agir(accao, agente)
-                
+                reward = self.environment.act(action, agent)
+
                 # Agente avalia (Momento de Aprendizagem)
-                agente.avaliacaoEstadoAtual(recompensa)
+                agent.evaluate_current_state(reward)
 
             # 4. Registar Estado / Métricas [cite: 200]
-            # self.registarResultados()
+            # self.record_results()
 
-            self.passoAtual += 1
-            # time.sleep(0.1) # Opcional para visualização
+            self.current_step += 1
+            # time.sleep(0.1)  # Opcional para visualização
 
         print("--- Terminar Simulação [cite: 202] ---")
