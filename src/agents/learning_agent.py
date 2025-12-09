@@ -1,88 +1,79 @@
 import random
 from typing import Dict, Tuple
 from src.core.interfaces import Agent
-from src.core.definitions import Action, Observation, OperationMode
+from src.core.definitions import OperationMode
 
 class LearningAgent(Agent):
-    """[cite: 159]"""
-
     def __init__(self, agent_id: str):
         self.id = agent_id
-        self.q_table: Dict[Tuple, Dict[str, float]] = {}  # Tabela Q (Estado -> {Action -> Value})
-
-        # Hiperparâmetros de RL [cite: 216]
-        self.alpha = 0.1   # Learning rate
-        self.gamma = 0.9   # Discount factor
-        self.epsilon = 1.0 # Exploration rate (decays over time)
-
-        # Internal state
+        self.current_state = None
         self.previous_state = None
         self.previous_action = None
+        self.q_table: Dict[Tuple[int, int], Dict[str, float]] = {}
 
-    @classmethod
-    def create(cls, config_file: str) -> 'Agent':
-        # Load configurations from file and return instance
-        return cls("LearningAgent_1")
+        # Hyperparameters
+        self.alpha = 0.1
+        self.gamma = 0.9
+        self.epsilon = 1.0
 
-    def observe(self, obs: Observation):
-        """Store current observation (s_t)"""
-        self.current_state = obs.data  # Simplified: data should be hashable (tuple/str)
+    def observe(self, state: Tuple[int, int]):
+        """Store current state (x, y)"""
+        self.current_state = state
 
-    def act(self) -> Action:
-        """Epsilon-Greedy strategy [cite: 217]"""
+        # Initialize Q for new states
+        if state not in self.q_table:
+            self.q_table[state] = {
+                'NORTH': 0.0,
+                'SOUTH': 0.0,
+                'EAST': 0.0,
+                'WEST': 0.0
+            }
 
-        # Lazy initialization: if state s not in q_table, init with 0.0 for all actions
-        if self.current_state not in self.q_table:
-            self.q_table[self.current_state] = {"MoveNorth": 0.0, "MoveSouth": 0.0, "MoveEast": 0.0, "MoveWest": 0.0}
+    def act(self) -> str:
+        """Epsilon-greedy action selection"""
+        state = self.current_state
 
-        # Action selection: exploration if random < epsilon, else exploitation
-        temp_epsilon = self.epsilon if self.mode == OperationMode.LEARNING else 0.0
-        if random.random() < temp_epsilon:
-            # Exploration (purely random among 4 possible actions)
-            action_name = random.choice(["MoveNorth", "MoveSouth", "MoveEast", "MoveWest"])
+        # Epsilon-greedy
+        if self.mode == OperationMode.LEARNING and random.random() < self.epsilon:
+            # Explore: random action
+            action = random.choice(['NORTH', 'SOUTH', 'EAST', 'WEST'])
         else:
-            # Exploitation (choose action with max Q for current state)
-            action_name = max(self.q_table[self.current_state], key=self.q_table[self.current_state].get)
+            # Exploit: best action
+            action = max(self.q_table[state], key=self.q_table[state].get)
 
-        action = Action(action_name)
-
-        # Save context (s, a) for later Q-update
-        self.previous_state = self.current_state
-        self.previous_action = action_name
+        # Store for learning
+        self.previous_state = state
+        self.previous_action = action
 
         return action
 
-    def evaluate_current_state(self, extrinsic_reward: float):
-        """
-        Q-Learning algorithm update according to Bellman Equation.
-        Q(s,a) <- Q(s,a) + alpha * [R + gamma * max(Q(s',a')) - Q(s,a)]
-        """
+    def evaluate_current_state(self, reward: float, next_state: Tuple[int, int]):
+        """Q-learning update: Q(s,a) += alpha * (reward + gamma * max(Q(s',a')) - Q(s,a))"""
         if self.mode != OperationMode.LEARNING:
             return
 
-        if self.previous_state is None or self.previous_action is None:
+        s = self.previous_state
+        a = self.previous_action
+
+        if s is None or a is None:
             return
 
-        # Calculate total reward (extrinsic + intrinsic penalty)
-        time_penalty = -0.1
-        total_reward = extrinsic_reward + time_penalty
+        # Ensure next_state in Q
+        if next_state not in self.q_table:
+            self.q_table[next_state] = {
+                'NORTH': 0.0,
+                'SOUTH': 0.0,
+                'EAST': 0.0,
+                'WEST': 0.0
+            }
 
-        # Ensure s' (current_state) is initialized in Q-table if not visited
-        if self.current_state not in self.q_table:
-            self.q_table[self.current_state] = {"MoveNorth": 0.0, "MoveSouth": 0.0, "MoveEast": 0.0, "MoveWest": 0.0}
+        # Compute max Q for next state
+        max_q_next = max(self.q_table[next_state].values())
 
-        # Get max over all possible actions for s'
-        max_q_next = max(self.q_table[self.current_state].values())
-
-        # Q-Learning update
-        current_q = self.q_table[self.previous_state][self.previous_action]
-        td_error = total_reward + self.gamma * max_q_next - current_q
-        self.q_table[self.previous_state][self.previous_action] += self.alpha * td_error
+        # Q-learning formula
+        td_error = reward + self.gamma * max_q_next - self.q_table[s][a]
+        self.q_table[s][a] += self.alpha * td_error
 
         # Decay epsilon
         if self.epsilon > 0.01:
-            self.epsilon *= 0.995
-
-    def communicate(self, message: str, from_agent: Agent):
-        """[cite: 180-182]"""
-        print(f"[{self.id}] Received message from {from_agent.id}: {message}")
+            self.epsilon *= 0.996  # Slight decay

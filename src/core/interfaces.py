@@ -1,50 +1,42 @@
 from abc import ABC, abstractmethod
-from typing import Any
-from src.core.definitions import Action, Observation, OperationMode
+from typing import Tuple, Any
+from src.core.definitions import OperationMode
 
 class Agent(ABC):
-    """Classe abstrata para agentes."""
     mode: OperationMode
 
     @abstractmethod
-    def create(self) -> 'Agent':
-        """Factory method exigido: create(file_name_params)"""
+    def observe(self, state: Tuple[int, int]):
+        """Receive current state (x, y)"""
         pass
 
     @abstractmethod
-    def observe(self, obs: Observation):
-        """Receive observation (observacao)"""
+    def act(self) -> str:
+        """Return action as string (e.g. 'NORTH')"""
         pass
 
     @abstractmethod
-    def act(self) -> Action:
-        """Decide action (age)"""
-        pass
-
-    @abstractmethod
-    def evaluate_current_state(self, reward: float):
-        """Evaluate current state (avaliacaoEstadoAtual)"""
-        pass
-
-    @abstractmethod
-    def communicate(self):
-        """Communication method (comunica)"""
+    def evaluate_current_state(self, reward: float, next_state: Tuple[int, int]):
+        """Update Q based on reward and next state"""
         pass
 
 class Environment(ABC):
-    """Classe abstrata para ambientes."""
-
     @abstractmethod
-    def observe_for(self, agent: Agent) -> Observation:
-        """Retrieve observation for agent (observacaoPara)"""
+    def get_state(self, agent: Agent) -> Tuple[int, int]:
+        """Return current state (x, y)"""
         pass
 
     @abstractmethod
-    def act(self, action: Action, agent: Agent) -> float:
-        """Execute action and return reward (agir)"""
+    def act(self, action: str, agent: Agent) -> float:
+        """Execute action, update state, return reward"""
         pass
 
     @abstractmethod
-    def update(self):
-        """Update environment (atualizacao)"""
+    def reset(self):
+        """Reset environment to initial state"""
+        pass
+
+    @abstractmethod
+    def display(self):
+        """Print environment to console"""
         pass
