@@ -15,13 +15,13 @@ class LighthouseEnvironment(Environment):
         """Execute action, update position, return reward"""
         x, y = self.agent_pos
 
-        if action == 'NORTH':
+        if action == 'MoveNorth':
             y = max(0, y - 1)
-        elif action == 'SOUTH':
+        elif action == 'MoveSouth':
             y = min(self.grid_size - 1, y + 1)
-        elif action == 'EAST':
+        elif action == 'MoveEast':
             x = min(self.grid_size - 1, x + 1)
-        elif action == 'WEST':
+        elif action == 'MoveWest':
             x = max(0, x - 1)
 
         self.agent_pos = (x, y)

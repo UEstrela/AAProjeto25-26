@@ -12,12 +12,12 @@ class Agent(ABC):
 
     @abstractmethod
     def act(self) -> str:
-        """Return action as string (e.g. 'NORTH')"""
+        """Seleção de ação epsilon-greedy"""
         pass
 
     @abstractmethod
-    def evaluate_current_state(self, reward: float, next_state: Tuple[int, int]):
-        """Update Q based on reward and next state"""
+    def learn(self, s, a, r, s_next):
+        """Q-Learning update"""
         pass
 
 class Environment(ABC):

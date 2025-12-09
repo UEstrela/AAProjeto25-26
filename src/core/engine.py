@@ -36,7 +36,7 @@ class SimulationEngine:
             # 4. Observe next state and learn
             for agent in self.agents:
                 next_state = self.environment.get_state(agent)
-                agent.evaluate_current_state(rewards[agent], next_state)
+                agent.learn(agent.previous_state, agent.previous_action, rewards[agent], next_state)
 
             steps += 1
 

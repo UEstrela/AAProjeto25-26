@@ -23,57 +23,49 @@ class LearningAgent(Agent):
         # Initialize Q for new states
         if state not in self.q_table:
             self.q_table[state] = {
-                'NORTH': 0.0,
-                'SOUTH': 0.0,
-                'EAST': 0.0,
-                'WEST': 0.0
+                'MoveNorth': 0.0,
+                'MoveSouth': 0.0,
+                'MoveEast': 0.0,
+                'MoveWest': 0.0
             }
 
     def act(self) -> str:
-        """Epsilon-greedy action selection"""
+        """Seleção de ação epsilon-greedy"""
         state = self.current_state
+        actions = ['MoveNorth', 'MoveSouth', 'MoveEast', 'MoveWest']
 
         # Epsilon-greedy
         if self.mode == OperationMode.LEARNING and random.random() < self.epsilon:
-            # Explore: random action
-            action = random.choice(['NORTH', 'SOUTH', 'EAST', 'WEST'])
+            # Exploração: ação aleatória
+            action = random.choice(actions)
         else:
-            # Exploit: best action
+            # Aproveitamento: ação com maior Q
             action = max(self.q_table[state], key=self.q_table[state].get)
 
-        # Store for learning
+        # Guardar para aprendizagem posterior
         self.previous_state = state
         self.previous_action = action
 
         return action
 
-    def evaluate_current_state(self, reward: float, next_state: Tuple[int, int]):
-        """Q-learning update: Q(s,a) += alpha * (reward + gamma * max(Q(s',a')) - Q(s,a))"""
-        if self.mode != OperationMode.LEARNING:
-            return
-
-        s = self.previous_state
-        a = self.previous_action
-
+    def learn(self, s, a, r, s_next):
+        """Q-Learning update: Q(s,a) = Q(s,a) + alpha * (r + gamma * max(Q(s_next,:)) - Q(s,a))"""
         if s is None or a is None:
             return
 
-        # Ensure next_state in Q
-        if next_state not in self.q_table:
-            self.q_table[next_state] = {
-                'NORTH': 0.0,
-                'SOUTH': 0.0,
-                'EAST': 0.0,
-                'WEST': 0.0
+        # Inicializar Q para novo estado s_next se necessário
+        if s_next not in self.q_table:
+            self.q_table[s_next] = {
+                'MoveNorth': 0.0,
+                'MoveSouth': 0.0,
+                'MoveEast': 0.0,
+                'MoveWest': 0.0
             }
 
-        # Compute max Q for next state
-        max_q_next = max(self.q_table[next_state].values())
+        # Máximo Q para s_next
+        max_q_next = max(self.q_table[s_next].values())
 
-        # Q-learning formula
-        td_error = reward + self.gamma * max_q_next - self.q_table[s][a]
+        # Fórmula Q-Learning
+        td_target = r + self.gamma * max_q_next
+        td_error = td_target - self.q_table[s][a]
         self.q_table[s][a] += self.alpha * td_error
-
-        # Decay epsilon
-        if self.epsilon > 0.01:
-            self.epsilon *= 0.996  # Slight decay
